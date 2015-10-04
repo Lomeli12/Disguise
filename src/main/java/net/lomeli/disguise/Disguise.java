@@ -3,7 +3,9 @@ package net.lomeli.disguise;
 import com.google.gson.Gson;
 
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
 
 import net.minecraft.entity.monster.EntityCreeper;
 import net.minecraft.entity.monster.EntitySkeleton;
@@ -14,10 +16,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
-import net.lomeli.disguise.core.DisguiseData;
-import net.lomeli.disguise.core.DisguiseHandler;
-import net.lomeli.disguise.core.DisguiseManager;
-import net.lomeli.disguise.core.WatchData;
+import net.lomeli.disguise.core.*;
 
 @Mod(modid = Disguise.MOD_ID, name = Disguise.NAME, version = Disguise.VERSION)
 public class Disguise {
@@ -34,17 +33,19 @@ public class Disguise {
         DisguiseManager manager = null;
         if (event.getSuggestedConfigurationFile().exists()) {
             try {
-                manager = gson.fromJson(event.getSuggestedConfigurationFile().getPath(), DisguiseManager.class);
+                Reader reader = new FileReader(event.getSuggestedConfigurationFile());
+                manager = gson.fromJson(reader, DisguiseManager.class);
+                reader.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
         if (manager == null) {
             manager = new DisguiseManager(null);
-            manager.addData(new DisguiseData("skull", 0, EntitySkeleton.class.getName(), new WatchData(0, 13, (byte) 0)));
-            manager.addData(new DisguiseData("skull", 1, EntitySkeleton.class.getName(), new WatchData(0, 13, (byte) 1)));
-            manager.addData(new DisguiseData("skull", 2, EntityZombie.class.getName()));
-            manager.addData(new DisguiseData("skull", 4, EntityCreeper.class.getName()));
+            manager.addData(new DisguiseData(new ItemData("skull", 0), EntitySkeleton.class.getName(), new WatchData(0, 13, (byte) 0)));
+            manager.addData(new DisguiseData(new ItemData("skull", 1), EntitySkeleton.class.getName(), new WatchData(0, 13, (byte) 1)));
+            manager.addData(new DisguiseData(new ItemData("skull", 2), EntityZombie.class.getName()));
+            manager.addData(new DisguiseData(new ItemData("skull", 4), EntityCreeper.class.getName()));
         }
         this.disguiseHandler = new DisguiseHandler(manager);
 

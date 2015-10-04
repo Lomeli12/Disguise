@@ -1,14 +1,13 @@
 package net.lomeli.disguise.core;
 
-import java.lang.reflect.Method;
-
 import net.minecraft.entity.DataWatcher;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.BlockPos;
 import net.minecraft.util.Rotations;
 
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.oredict.OreDictionary;
 
 public class WatchData {
@@ -41,18 +40,30 @@ public class WatchData {
             return false;
         switch (type) {
             case 1:
-                return entity.getDataWatcher().getWatchableObjectShort(id) == (Short) value;
+                return entity.getDataWatcher().getWatchableObjectShort(id) == ((Double) value).shortValue();
             case 2:
-                return entity.getDataWatcher().getWatchableObjectInt(id) == (Integer) value;
+                return entity.getDataWatcher().getWatchableObjectInt(id) == ((Double) value).intValue();
             case 3:
-                return entity.getDataWatcher().getWatchableObjectFloat(id) == (Float) value;
+                return entity.getDataWatcher().getWatchableObjectFloat(id) == ((Double) value).floatValue();
             case 4:
                 return entity.getDataWatcher().getWatchableObjectString(id).equals(String.valueOf(value));
             case 5:
-                return OreDictionary.itemMatches((ItemStack) value, entity.getDataWatcher().getWatchableObjectItemStack(id), true);
+                String mod = "minecraft";
+                String name = String.valueOf(value);
+                int metadata = 0;
+                if (name.contains(":")) {
+                    String[] split = name.split(":");
+                    mod = split[0];
+                    name = split[1];
+                    if (split.length == 3)
+                        metadata = Integer.valueOf(split[2]);
+                }
+                Item item = GameRegistry.findItem(mod, name);
+                if (item == null)
+                    return false;
+                return OreDictionary.itemMatches(new ItemStack(item, 1, metadata), entity.getDataWatcher().getWatchableObjectItemStack(id), metadata != -1);
             case 6:
-                //TODO read blockpos from datawatcher
-                DataWatcher.WatchableObject watchObject = (DataWatcher.WatchableObject) invokeMethod(DataWatcher.class, entity.getDataWatcher(), new String[]{"getWatchedObject", "func_75691_i", "j"}, id);
+                DataWatcher.WatchableObject watchObject = (DataWatcher.WatchableObject) ObfUtil.invokeMethod(DataWatcher.class, entity.getDataWatcher(), new String[]{"getWatchedObject", "func_75691_i", "j"}, id);
                 if (watchObject != null && watchObject.getObject() instanceof BlockPos) {
                     BlockPos entityBlockPos = (BlockPos) watchObject.getObject();
                     String blockPosString = (String) value;
@@ -84,35 +95,7 @@ public class WatchData {
                 }
                 return false;
             default:
-                return entity.getDataWatcher().getWatchableObjectByte(id) == (Byte) value;
+                return entity.getDataWatcher().getWatchableObjectByte(id) == ((Double) value).byteValue();
         }
-    }
-
-    public <T, E> Object invokeMethod(Class<? extends E> clazz, E instance, String[] names, Object... args) {
-        try {
-            Method method = getMethod(clazz, names);
-            if (method != null)
-                return method.invoke(instance, args);
-        } catch (Exception e) {
-            throw new ReflectionHelper.UnableToFindMethodException(names, e);
-        }
-        return null;
-    }
-
-    public Method getMethod(Class<?> clazz, String... names) {
-        try {
-            Method[] methods = clazz.getDeclaredMethods();
-            for (Method method : methods) {
-                for (String methodName : names) {
-                    if (method.getName().equalsIgnoreCase(methodName)) {
-                        method.setAccessible(true);
-                        return method;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            throw new ReflectionHelper.UnableToFindMethodException(names, e);
-        }
-        return null;
     }
 }
